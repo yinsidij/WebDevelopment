@@ -189,7 +189,8 @@ class Login(Handler):
                 logging.info("password correct")
                 logging.info(r.user)
                 cookie_val = make_cookie(str(r.key().id()))
-                self.response.headers.add_header('Set-Cookie', 'user_id=%s path=/' %cookie_val)
+                logging.info("setting cookies to above user")
+                self.response.headers.add_header('Set-Cookie', 'user_id=%s; path=/' %cookie_val)
                 self.redirect('/blog/welcome')
             else:
                 logging.info("password incorrect")
@@ -201,7 +202,7 @@ class Login(Handler):
         
 class Logout(Handler):
     def get(self):
-        self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
+        self.response.headers.add_header('Set-Cookie', 'user_id=; path=/')
         self.redirect('/blog')
 
 
