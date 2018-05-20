@@ -36,6 +36,12 @@ class Handler(webapp2.RequestHandler):
             logging.info(self.r.user)
         else:
             self.r = None
+        
+        #smart way to handle different format request on the same website
+        if self.request.url.endswith('.json'):
+            self.format = 'json'
+        else:
+            self.format = 'html'
             
         logging.info("Handler initializing ends...")
 
@@ -85,40 +91,37 @@ class NewPost(Handler):
             
 class MainBlog(Handler):
     
-    def render_front(self):
-        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")       
+    def render_front(self, blogs):
         self.render("main_blog.html", blogs=blogs)
-        
-    def get(self):
-        self.render_front()
-            
-    def post(self):
-        self.render_front()
-        
-class MainBlogJson(Handler):
     
-    def render_json(self):
-        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")       
+    def render_json(self, blogs):
         self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
         self.write(json.dumps([b.to_dict() for b in blogs]))
+        
     def get(self):
-        self.render_json()
+        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
+        if (self.format == 'html'):
+            self.render_front(blogs)
+        elif (self.format == 'json'):
+            self.render_json(blogs)
             
     def post(self):
-        self.render_json()
+        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
+        if (self.format == 'html'):
+            self.render_front(blogs)
+        elif (self.format == 'json'):
+            self.render_json(blogs)
         
 class BlogPage(Handler):
     def get(self, post_id):
         b = Blog.get_by_id(int(post_id))
         if b:
-            self.render("main_blog.html", blogs=[b])
+            if (self.format == 'html'):
+                self.render("main_blog.html", blogs=[b])
+            elif (self.format == 'json'):
+                self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
+                self.write(json.dumps([b.to_dict()]))
 
-class BlogPageJson(Handler):
-    def get(self, post_id):
-        b = Blog.get_by_id(int(post_id))
-        if b:
-            self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
-            self.write(json.dumps([b.to_dict()]))          
 #######################################################################
 ####
 ####  User:
@@ -293,11 +296,10 @@ app = webapp2.WSGIApplication([
 #
     ('/', MainPage),
 #
-    ('/blog', MainBlog),
-    ('/blog.json', MainBlogJson),
+    ('/blog/?(?:.json)?', MainBlog),
     ('/blog/newpost', NewPost),
-    ('/blog/(\d+)', BlogPage),
-    ('/blog/(\d+).json', BlogPageJson),
+    ('/blog/(\d+)(?:.json)?', BlogPage),
+
 #
     ('/signup', Signup),
     ('/login', Login),
