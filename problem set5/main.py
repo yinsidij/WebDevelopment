@@ -5,6 +5,7 @@ import datetime
 import re
 import hashlib
 import logging
+import json
 
 from google.appengine.ext import db
 
@@ -57,6 +58,9 @@ class Blog(db.Model):
     subject = db.StringProperty(required = True)
     blog = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
+    
+    def to_dict(self):
+       return dict([(p, unicode(getattr(self, p))) for p in self.properties()])
 
 class NewPost(Handler):
     def render_newpost(self, subject="", blog="", error=""):
@@ -82,22 +86,39 @@ class NewPost(Handler):
 class MainBlog(Handler):
     
     def render_front(self):
-        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")
-                        
+        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")       
         self.render("main_blog.html", blogs=blogs)
         
     def get(self):
         self.render_front()
-    
+            
     def post(self):
         self.render_front()
+        
+class MainBlogJson(Handler):
+    
+    def render_json(self):
+        blogs = db.GqlQuery("SELECT * FROM Blog ORDER BY created DESC")       
+        self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
+        self.write(json.dumps([b.to_dict() for b in blogs]))
+    def get(self):
+        self.render_json()
             
+    def post(self):
+        self.render_json()
+        
 class BlogPage(Handler):
     def get(self, post_id):
         b = Blog.get_by_id(int(post_id))
         if b:
             self.render("main_blog.html", blogs=[b])
-        
+
+class BlogPageJson(Handler):
+    def get(self, post_id):
+        b = Blog.get_by_id(int(post_id))
+        if b:
+            self.response.headers['Content-Type'] = 'application/json; charset=UTF-8'
+            self.write(json.dumps([b.to_dict()]))          
 #######################################################################
 ####
 ####  User:
@@ -273,8 +294,10 @@ app = webapp2.WSGIApplication([
     ('/', MainPage),
 #
     ('/blog', MainBlog),
+    ('/blog.json', MainBlogJson),
     ('/blog/newpost', NewPost),
     ('/blog/(\d+)', BlogPage),
+    ('/blog/(\d+).json', BlogPageJson),
 #
     ('/signup', Signup),
     ('/login', Login),
