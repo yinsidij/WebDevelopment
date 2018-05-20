@@ -29,10 +29,15 @@ class Handler(webapp2.RequestHandler):
         cookie_val = self.request.cookies.get("user_id", 'path=/')
         logging.info("Handler initializing stars...")
         id = check_cookie(cookie_val)
+        #self.User is the registrated user when we found
+        #cookie is valid for this user
+        #And we can find it in db
+        self.isUser = None
         logging.info(id)
         if id:
             
             self.r = Registration.getEntryById(id)
+            self.isUser = (self.r!=None)
             logging.info(self.r.user)
         else:
             self.r = None
@@ -73,9 +78,16 @@ class NewPost(Handler):
         self.render("new_post.html", subject=subject, blog=blog, error=error)
     
     def get(self):
-        self.render_newpost()
-        
+        if (self.isUser):
+            self.render_newpost()
+        else:
+            self.redirect('/login')
+            
     def post(self):
+        
+        if not self.isUser:
+            self.redirect('/blog')
+        
         subject = self.request.get("subject")
         blog = self.request.get("blog")
         
@@ -290,7 +302,7 @@ class Login(Handler):
 class Logout(Handler):
     def get(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; path=/')
-        self.redirect('/blog')
+        self.redirect('/signup')
         
 app = webapp2.WSGIApplication([
 #
