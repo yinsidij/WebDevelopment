@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <a href="/blog">CS 253 Blog</a>
+    <head>
+
+    <body>
+
+
+    {% for blog in blogs %}
+        <div>
+            <div>{{blog.subject}}        {{blog.created}}</div>
+            <pre>{{blog.blog}}</pre>
+        </div>
+        <br>
+    {% endfor %}
+
+    </body>
+    
+    <footer>
+        <div>
+            queried {{timeInSecond}} seconds ago
+        </div>
+    </footer>
+</html>
